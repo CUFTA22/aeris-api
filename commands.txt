@@ -1,0 +1,12 @@
+
+// Nest stuff
+
+nest new .
+
+nest g module user
+
+// Prisma stuff
+
+npx prisma init
+
+npx prisma migrate dev
