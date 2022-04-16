@@ -1,108 +1,98 @@
-import {
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 
-import { PrismaService } from '@modules/prisma/prisma.service';
-import { JwtService } from '@nestjs/jwt';
-
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { TokenService } from '@modules/token/token.service';
+import { UserService } from '@modules/user/user.service';
 
 import { AuthDto } from './dto';
 import * as argon from 'argon2';
-import { ConfigService } from '@nestjs/config';
+import { ITokens } from './types';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private prisma: PrismaService,
-    private jwt: JwtService,
-    private config: ConfigService,
-  ) {}
-
-  // ----------------------------------------
-  // Sign JWT token
-  // ----------------------------------------
-
-  async signToken(
-    id: number,
-    email: string,
-  ): Promise<string> {
-    const payload = {
-      sub: id, // Subject
-      email,
-    };
-
-    const secret = this.config.get('JWT_ACCESS_SECRET');
-
-    return this.jwt.signAsync(payload, {
-      expiresIn: '15m', // 15 minutes
-      issuer: 'Aeris',
-      secret,
-    });
-  }
+  constructor(private token: TokenService, private user: UserService) {}
 
   // ----------------------------------------
   // User login
   // ----------------------------------------
 
-  async login(dto: AuthDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
+  async loginLocal(dto: AuthDto) {
+    const user = await this.user.findByField('email', dto.email);
 
     // Check if user exists
-    if (!user)
-      throw new ForbiddenException('Incorrect credentials');
+    if (!user) throw new ForbiddenException('Incorrect credentials');
 
     // Compare passwords
+    const isMatch = await argon.verify(user?.hash, dto.password);
 
-    const isMatch = await argon.verify(
-      user.hash,
-      dto.password,
-    );
+    if (!isMatch) throw new ForbiddenException('Incorrect credentials');
 
-    if (!isMatch)
-      throw new ForbiddenException('Incorrect credentials');
-
-    return {
-      access_token: this.signToken(user.id, user.email),
-    };
+    return await this.getUserTokens(user);
   }
 
   // ----------------------------------------
   // User registration
   // ----------------------------------------
 
-  async register(dto: AuthDto) {
+  async registerLocal(dto: AuthDto): Promise<ITokens> {
     // Hash password
-
     const hash = await argon.hash(dto.password);
 
     // Create user
+    const user = await this.user.createUser(dto.email, hash);
 
-    try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          hash,
-        },
-      });
+    return await this.getUserTokens(user);
+  }
 
-      return {
-        access_token: this.signToken(user.id, user.email),
-      };
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        // P2002 - unique field error
-        if (error.code === 'P2002') {
-          throw new ForbiddenException('Credentials taken');
-        }
-      }
+  // ----------------------------------------
+  // User logout
+  // ----------------------------------------
 
-      throw error;
-    }
+  async logout(id: number) {
+    // Remove hashedRt
+    await this.user.updateUserById(id, 'hashedRt', '');
+  }
+
+  // ----------------------------------------
+  // User refresh tokens
+  // ----------------------------------------
+
+  async refreshTokens(id: number, rt: string) {
+    const user = await this.user.findByField('id', id);
+
+    // Check if user exists
+    if (!user || !user.hashedRt) throw new ForbiddenException('Access denied');
+
+    // Compare token hash
+    const isMatch = await argon.verify(user.hashedRt, rt);
+
+    if (!isMatch) throw new ForbiddenException('Access denied');
+
+    return await this.getUserTokens(user);
+  }
+
+  // ----------------------------------------------------------------------------------
+  // Utils
+  // ----------------------------------------------------------------------------------
+
+  // ----------------------------------------
+  // Update RT hash
+  // ----------------------------------------
+
+  async updateRtHash(id: number, rt: string) {
+    const hashedRt = await argon.hash(rt);
+    await this.user.updateUserById(id, 'hashedRt', hashedRt);
+  }
+
+  // ----------------------------------------
+  // Update RT hash
+  // ----------------------------------------
+
+  async getUserTokens(user: User): Promise<ITokens> {
+    const tokens = await this.token.signTokens(user.id, user.email);
+
+    // Update hash
+    await this.updateRtHash(user.id, tokens.refresh_token);
+    return tokens;
   }
 }

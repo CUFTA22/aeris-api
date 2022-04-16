@@ -16,7 +16,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   email String @unique
-  hash  String
+  hash  String // Password
+
+  hashedRt String? // Hashed refresh token
 
   firstName String?
   lastName  String?
