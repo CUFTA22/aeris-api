@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { IJWT } from '../types';
 
 // Access token strategy
 
@@ -16,7 +17,7 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt-access') {
     });
   }
 
-  async validate(payload: { sub: number; email: string }) {
+  async validate(payload: IJWT) {
     return payload;
   }
 }
