@@ -1,25 +1,24 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 // Imported modules
-import { ConfigModule } from '@nestjs/config';
-
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
-import { BookmarkModule } from '@modules/bookmark/bookmark.module';
 import { PrismaModule } from '@modules/prisma/prisma.module';
 import { TokenModule } from '@modules/token/token.module';
-
-import { AtGuard } from './auth/guard';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
     AuthModule,
     UserModule,
-    BookmarkModule,
     PrismaModule,
-    TokenModule,
+    TokenModule, // Token signing
+    JobsModule, // Cron jobs
+
+    ScheduleModule.forRoot(),
 
     ConfigModule.forRoot({
       isGlobal: true,
