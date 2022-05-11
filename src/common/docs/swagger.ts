@@ -1,3 +1,4 @@
+import { AuthModule } from '@modules/auth/auth.module';
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -6,11 +7,12 @@ const createSwagger = (app: INestApplication) => {
     .setTitle('Aeris API')
     .setDescription('API description')
     .setVersion('1.0')
+    .addServer('http://localhost:3001/')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {});
 
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('swagger', app, document, {});
 };
 
 export default createSwagger;

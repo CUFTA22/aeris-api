@@ -1,23 +1,17 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
-import { AppModule } from './app.module';
-
-import createSwagger from './common/docs/swagger';
-import { CORS_OPTIONS } from './common/config';
 import helmet from 'helmet';
+
+import { AppModule } from './app/app.module';
+
+import { CORS_OPTIONS, GLOBAL_PIPES } from './common/config';
+import createSwagger from './common/docs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
   app.enableCors(CORS_OPTIONS);
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strip out fields not defined in DTO
-    }),
-  );
+  app.useGlobalPipes(...GLOBAL_PIPES);
 
   // Swagger docs on /api/docs
   createSwagger(app);

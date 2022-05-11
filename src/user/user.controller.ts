@@ -3,7 +3,9 @@ import { GetUser } from '@modules/auth/decorator';
 import { AtGuard } from '@modules/auth/guard';
 
 import { User } from '@prisma/client';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('User')
 @Controller('users')
 export class UserController {
   //   constructor(private userService: UserService) {}
