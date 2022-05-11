@@ -1,4 +1,3 @@
-import { AuthModule } from '@modules/auth/auth.module';
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 

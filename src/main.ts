@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors(CORS_OPTIONS);
   app.useGlobalPipes(...GLOBAL_PIPES);
 
-  // Swagger docs on /api/docs
+  // Swagger docs on /swagger
   createSwagger(app);
 
   await app.listen(3001);
