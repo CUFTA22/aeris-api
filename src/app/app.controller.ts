@@ -12,4 +12,9 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('get-logs')
+  getLogs(): string {
+    return this.appService.getHello();
+  }
 }

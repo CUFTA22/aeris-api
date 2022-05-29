@@ -11,7 +11,7 @@ const createSwagger = (app: INestApplication) => {
 
   const document = SwaggerModule.createDocument(app, config, {});
 
-  SwaggerModule.setup('swagger', app, document, {});
+  SwaggerModule.setup('/swagger', app, document, {});
 };
 
 export default createSwagger;
